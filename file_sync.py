@@ -1,5 +1,5 @@
 """Sync service for copying the content of source folder into a given
-replica folder. All operations on the files are logged depending on the 
+replica folder. All operations on the files are logged depending on the
 indicators of given changes.
 
 Args:
