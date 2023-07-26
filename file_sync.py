@@ -1,3 +1,20 @@
+"""Sync service for copying the content of source folder into a given
+replica folder. All operations on the files are logged depending on the 
+indicators of given changes.
+
+Args:
+    source_path (str): Path of folder to keep track of
+    replica_path (str): Path of folder where synched copy will be stored
+    log_path (str): Path to store the log file at
+    sync_interval (float): Number of minutes in between checks on the source folder
+
+Raises:
+    argparse.ArgumentTypeError: when validation of the input did not succeed
+
+Returns:
+    None
+"""
+
 import argparse
 import hashing
 import logging
@@ -52,8 +69,6 @@ def generate_source_mapping(source_path: str):
 
 
 def main(args):
-    logger.info(f"{args=}")
-
     source_path: pathlib.Path = pathlib.Path(args.source_path)
     replica_path: pathlib.Path = pathlib.Path(args.replica_path)
 
@@ -90,7 +105,7 @@ def main(args):
                         continue
                     else:
                         # NOTE: filename match, content not match -> modification
-                        logger.info("File %s content has been modified.", key)
+                        logger.info("File % content has been modified.", key)
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
                 else:
@@ -100,21 +115,21 @@ def main(args):
                             source_mapping.keys()
                         )[list(source_mapping.values()).index(value)]
                         logger.info(
-                            "File %s has been moved to %s", key, source_file_new_path
+                            "File % has been moved to %", key, source_file_new_path
                         )
                         # NOTE: rename using pathlib
                         (replica_path / key).rename(replica_path / source_file_new_path)
                         continue
                     else:
                         # NOTE: filename not match, content not match -> removal (double change also possible)
-                        logger.info("File %s has been removed", key)
+                        logger.info("File % has been removed", key)
                         os.remove(replica_path / key)
                         continue
             for key, value in source_mapping.items():
                 if key not in replica_mapping.keys():
                     if value not in replica_mapping.values():
                         # NOTE: origin path not in replica and origin content not in replica -> creation
-                        logger.info("Created new file at %s", key)
+                        logger.info("Created new file at %", key)
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
 
