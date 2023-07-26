@@ -68,9 +68,14 @@ def generate_source_mapping(source_path: str):
         ).hexdigest()
 
 
-def main(args):
-    source_path: pathlib.Path = pathlib.Path(args.source_path)
-    replica_path: pathlib.Path = pathlib.Path(args.replica_path)
+def main(arguments):
+    """main module
+
+    Args:
+        arguments (Namespace): parsed arguments
+    """
+    source_path: pathlib.Path = pathlib.Path(arguments.source_path)
+    replica_path: pathlib.Path = pathlib.Path(arguments.replica_path)
 
     if not pathlib.Path.exists(source_path):
         logger.fatal(
@@ -101,32 +106,30 @@ def main(args):
             key: pathlib.Path
             value: Any
             for key, value in replica_mapping.items():
-                if key in source_mapping.keys():
-                    if value in source_mapping.values():
+                if key in list(source_mapping.keys()):
+                    if value in list(source_mapping.values()):
                         # NOTE: filename match, content match -> ignore
                         continue
-                    else:
-                        # NOTE: filename match, content not match -> modification
-                        logger.info("File % content has been modified.", key)
-                        shutil.copy2(source_path / key, replica_path / key)
-                        continue
-                else:
-                    if value in source_mapping.values():
-                        # NOTE: filename not match, content match -> rename/move
-                        source_file_new_path: pathlib.Path = list(
-                            source_mapping.keys()
-                        )[list(source_mapping.values()).index(value)]
-                        logger.info(
-                            "File % has been moved to %", key, source_file_new_path
-                        )
-                        # NOTE: rename using pathlib
-                        (replica_path / key).rename(replica_path / source_file_new_path)
-                        continue
-                    else:
-                        # NOTE: filename and content not match -> removal
-                        logger.info("File % has been removed", key)
-                        os.remove(replica_path / key)
-                        continue
+
+                    # NOTE: filename match, content not match -> modification
+                    logger.info("File % content has been modified.", key)
+                    shutil.copy2(source_path / key, replica_path / key)
+                    continue
+
+                elif value in list(source_mapping.values()):
+                    # NOTE: filename not match, content match -> rename/move
+                    source_file_new_path: pathlib.Path = list(source_mapping.keys())[
+                        list(source_mapping.values()).index(value)
+                    ]
+                    logger.info("File % has been moved to %", key, source_file_new_path)
+                    # NOTE: rename using pathlib
+                    (replica_path / key).rename(replica_path / source_file_new_path)
+                    continue
+
+                # NOTE: filename and content not match -> removal
+                logger.info("File % has been removed", key)
+                os.remove(replica_path / key)
+                continue
             for key, value in source_mapping.items():
                 if key not in replica_mapping.keys():
                     if value not in replica_mapping.values():
@@ -135,7 +138,7 @@ def main(args):
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
 
-            time.sleep(args.sync_interval * 60)
+            time.sleep(arguments.sync_interval * 60)
     except KeyboardInterrupt:
         logger.info("Exiting sync process...")
 
@@ -153,7 +156,8 @@ if __name__ == "__main__":
             raise argparse.ArgumentTypeError("Boolean value expected.")
 
     parser = argparse.ArgumentParser(
-        description="Keep a synced copy of the source path at the replica path and log all changes ocurring to the contenct of source",
+        description="Keep a synced copy of the source path at the replica \
+        path and log all changes ocurring to the contenct of source",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
