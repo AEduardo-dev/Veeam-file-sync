@@ -74,7 +74,8 @@ def main(args):
 
     if not pathlib.Path.exists(source_path):
         logger.fatal(
-            f"Source path {source_path} is not present. No synchronization will be executed"
+            "Source path % is not present. No synchronization will be executed",
+            source_path,
         )
         sys.exit(1)
 
@@ -89,7 +90,8 @@ def main(args):
         while True:
             if not pathlib.Path.exists(pathlib.Path(source_path)):
                 logger.fatal(
-                    f"Source path {source_path} is not present. No synchronization will be executed"
+                    "Source path % is not present. No synchronization will be executed",
+                    source_path,
                 )
                 sys.exit(1)
 
@@ -121,14 +123,14 @@ def main(args):
                         (replica_path / key).rename(replica_path / source_file_new_path)
                         continue
                     else:
-                        # NOTE: filename not match, content not match -> removal (double change also possible)
+                        # NOTE: filename and content not match -> removal
                         logger.info("File % has been removed", key)
                         os.remove(replica_path / key)
                         continue
             for key, value in source_mapping.items():
                 if key not in replica_mapping.keys():
                     if value not in replica_mapping.values():
-                        # NOTE: origin path not in replica and origin content not in replica -> creation
+                        # NOTE: path and content not match -> creation
                         logger.info("Created new file at %", key)
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
