@@ -16,7 +16,6 @@ Returns:
 """
 
 import argparse
-from glob import glob
 import hashing
 import logging
 import os
