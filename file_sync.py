@@ -1,12 +1,12 @@
-import shutil
-import pathlib
 import argparse
-import logging
-from typing import Any, Dict
-import time
 import hashing
-import sys
+import logging
 import os
+import pathlib
+import shutil
+import sys
+import time
+from typing import Any, Dict
 
 
 replica_mapping: Dict[pathlib.Path, Any] = {}
@@ -90,7 +90,7 @@ def main(args):
                         continue
                     else:
                         # NOTE: filename match, content not match -> modification
-                        logger.info(f"File {key} content has been modified.")
+                        logger.info("File %s content has been modified.", key)
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
                 else:
@@ -100,21 +100,21 @@ def main(args):
                             source_mapping.keys()
                         )[list(source_mapping.values()).index(value)]
                         logger.info(
-                            f"File {key} has been moved to {source_file_new_path}"
+                            "File %s has been moved to %s", key, source_file_new_path
                         )
                         # NOTE: rename using pathlib
                         (replica_path / key).rename(replica_path / source_file_new_path)
                         continue
                     else:
                         # NOTE: filename not match, content not match -> removal (double change also possible)
-                        logger.info(f"File {key} has been removed")
+                        logger.info("File %s has been removed", key)
                         os.remove(replica_path / key)
                         continue
             for key, value in source_mapping.items():
                 if key not in replica_mapping.keys():
                     if value not in replica_mapping.values():
                         # NOTE: origin path not in replica and origin content not in replica -> creation
-                        logger.info(f"Created new file at {key}")
+                        logger.info("Created new file at %s", key)
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
 
@@ -175,5 +175,4 @@ if __name__ == "__main__":
     logger = logging.getLogger("File Sync")
 
     logger.info(f"{args=}")
-    print(f"{args=}")
     main(args)
