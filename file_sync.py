@@ -16,6 +16,7 @@ Returns:
 """
 
 import argparse
+from glob import glob
 import hashing
 import logging
 import os
@@ -79,8 +80,7 @@ def main(arguments):
 
     if not pathlib.Path.exists(source_path):
         logger.fatal(
-            "Source path % is not present. No synchronization will be executed",
-            source_path,
+            f"Source path {source_path} is not present. No synchronization will be executed",
         )
         sys.exit(1)
 
@@ -95,8 +95,7 @@ def main(arguments):
         while True:
             if not pathlib.Path.exists(pathlib.Path(source_path)):
                 logger.fatal(
-                    "Source path % is not present. No synchronization will be executed",
-                    source_path,
+                    f"Source path {source_path} is not present. No synchronization will be executed",
                 )
                 sys.exit(1)
 
@@ -106,37 +105,64 @@ def main(arguments):
             key: pathlib.Path
             value: Any
             for key, value in replica_mapping.items():
+                # NOTE: if path in both folders -> No need for new folder generation
                 if key in list(source_mapping.keys()):
                     if value in list(source_mapping.values()):
                         # NOTE: filename match, content match -> ignore
                         continue
 
                     # NOTE: filename match, content not match -> modification
-                    logger.info("File % content has been modified.", key)
+                    logger.info(f"File {key} content has been modified.")
                     shutil.copy2(source_path / key, replica_path / key)
                     continue
 
-                elif value in list(source_mapping.values()):
+                if value in list(source_mapping.values()):
                     # NOTE: filename not match, content match -> rename/move
                     source_file_new_path: pathlib.Path = list(source_mapping.keys())[
                         list(source_mapping.values()).index(value)
                     ]
-                    logger.info("File % has been moved to %", key, source_file_new_path)
+                    logger.info(f"File {key} has been moved to {source_file_new_path}")
+
+                    if not (replica_path / source_file_new_path.parent).exists():
+                        logger.info(
+                            f"New directorie/s at {source_file_new_path.parent}"
+                        )
+                        os.makedirs(replica_path / source_file_new_path.parent)
+
                     # NOTE: rename using pathlib
                     (replica_path / key).rename(replica_path / source_file_new_path)
                     continue
 
                 # NOTE: filename and content not match -> removal
-                logger.info("File % has been removed", key)
+                logger.info(f"File {key} has been removed")
                 os.remove(replica_path / key)
                 continue
             for key, value in source_mapping.items():
                 if key not in replica_mapping.keys():
                     if value not in replica_mapping.values():
                         # NOTE: path and content not match -> creation
-                        logger.info("Created new file at %", key)
+                        if not (replica_path / key.parent).exists():
+                            logger.info(f"New directorie/s at {key.parent}")
+                        os.makedirs(replica_path / key.parent)
+                        logger.info(f"Created new file at {key}")
                         shutil.copy2(source_path / key, replica_path / key)
                         continue
+
+            source_dirs = [
+                directory.relative_to(source_path)
+                for directory in pathlib.Path(source_path).rglob("*")
+                if pathlib.Path.is_dir(directory)
+            ]
+            replica_dirs = [
+                directory.relative_to(replica_path)
+                for directory in pathlib.Path(replica_path).rglob("*")
+                if pathlib.Path.is_dir(directory)
+            ]
+
+            for directory in replica_dirs:
+                if directory not in source_dirs:
+                    logger.info(f"Removed directory {directory}")
+                    os.rmdir(replica_path / directory)
 
             time.sleep(arguments.sync_interval * 60)
     except KeyboardInterrupt:
