@@ -31,4 +31,5 @@ jobs:
         checkName: python-flake8
         # Path to use for flake8
         path: .
+        config: ./flake8.conf
         isTest: false
